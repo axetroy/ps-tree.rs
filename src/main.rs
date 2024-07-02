@@ -92,8 +92,6 @@ fn main() {
             }
         }
 
-        thread::sleep(Duration::from_secs(interval));
-
         if let Some(root) = stat::build_process_tree(&system, Pid::from_u32(target_pid)) {
             // print_process_tree(&root, 0);
             // 使用 serde_json 序列化 ProcessNode 为 JSON
@@ -102,5 +100,7 @@ fn main() {
         } else {
             println!("No process found with PID: {}", target_pid);
         }
+
+        thread::sleep(Duration::from_secs(interval));
     }
 }
