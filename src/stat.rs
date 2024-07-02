@@ -30,6 +30,7 @@ pub struct ProcessNode {
     cmd: Vec<String>,
     cpu_usage: f32,
     memory: u64,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
     children: Vec<ProcessNode>,
 }
 
