@@ -18,7 +18,7 @@ $ ps-tree <pid>
 
 It will output information(JSON format) about the process and its subprocesses.
 
-<detail>
+<details>
 
   <summary>See the output example(Pretty)</summary>
 
@@ -717,7 +717,7 @@ It will output information(JSON format) about the process and its subprocesses.
     ]
   }
   ```
-<detail>
+</details>
 
 ## LICENSE
 
