@@ -37,7 +37,7 @@ fn print_version() {
 }
 
 fn exit_when_become_orphan_processes() {
-    println!("Parent process exited. Exiting...");
+    eprintln!("Parent process exited. Exiting...");
     process::exit(0);
 }
 
@@ -109,13 +109,13 @@ fn main() {
             let json = serde_json::to_string(&root).unwrap();
             println!("{}", json);
         } else {
-            println!("No process found with PID: {}", target_pid);
+            eprintln!("No process found with PID: {}", target_pid);
         }
 
         // 使用 recv_timeout 代替 thread::sleep
         match rx.recv_timeout(Duration::from_secs(interval)) {
             Ok(_) | Err(mpsc::RecvTimeoutError::Disconnected) => {
-                println!("Exiting due to CTRL+C or channel disconnect...");
+                eprintln!("Exiting due to CTRL+C or channel disconnect...");
                 break;
             }
             Err(mpsc::RecvTimeoutError::Timeout) => {
