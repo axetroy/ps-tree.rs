@@ -23,6 +23,7 @@ One JSON per line
 eg. (Pretty)
 
 <detail>
+
 ```json
 {
   "pid": 90456,
