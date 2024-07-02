@@ -26,6 +26,7 @@ pub struct ProcessNode {
     // 步骤 3: 使用 SerializablePid 替代 Pid
     pid: SerializablePid,
     ppid: SerializablePid,
+    gid: Option<u32>,
     name: String,
     cmd: Vec<String>,
     cpu_usage: f32,
@@ -38,6 +39,7 @@ impl ProcessNode {
     fn new(
         pid: Pid,
         ppid: Pid,
+        gid: Option<u32>,
         name: String,
         cmd: Vec<String>,
         cpu_usage: f32,
@@ -46,6 +48,7 @@ impl ProcessNode {
         ProcessNode {
             pid: SerializablePid(pid),
             ppid: SerializablePid(ppid),
+            gid,
             name,
             cmd,
             cpu_usage,
@@ -63,9 +66,11 @@ pub fn build_process_tree(system: &System, target_pid: Pid) -> Option<ProcessNod
 
     // 创建所有节点
     for (pid, process) in system.processes() {
+        let s = process.group_id().map(|g| g.count_ones());
         let node = ProcessNode::new(
             *pid,
             process.parent().unwrap_or(Pid::from_u32(0)),
+            s,
             process.name().to_string(),
             process.cmd().to_vec(),
             process.cpu_usage(),
