@@ -8,7 +8,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc;
 use std::sync::Arc;
 use std::time::Duration;
-use sysinfo::{Pid, System};
+use sysinfo::{Pid, RefreshKind, System};
 
 fn print_help() {
     // 读取命令行参数
@@ -68,7 +68,7 @@ fn main() {
 
     let current_pid = process::id(); // 获取当前进程的PID，即父进程PID
 
-    let mut system = System::new_all();
+    let mut system = System::new_with_specifics(RefreshKind::new());
 
     while running.load(Ordering::SeqCst) {
         system.refresh_all();
