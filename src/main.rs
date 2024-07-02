@@ -4,12 +4,10 @@ mod stat;
 
 use std::env;
 use std::process;
-use std::thread;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::mpsc;
+use std::sync::Arc;
 use std::time::Duration;
-use std::{
-    sync::atomic::{AtomicBool, Ordering},
-    sync::Arc,
-};
 use sysinfo::{Pid, System};
 
 fn print_help() {
@@ -30,12 +28,15 @@ fn print_help() {
 
 fn main() {
     let running = Arc::new(AtomicBool::new(true));
-    let r = running.clone();
+    let running_clone = Arc::clone(&running); // 克隆Arc引用
+    let (tx, rx) = mpsc::channel::<()>();
 
     ctrlc::set_handler(move || {
-        r.store(false, Ordering::SeqCst);
+        running_clone.store(false, Ordering::SeqCst);
+        let _ = tx.send(()); // 发送信号，忽略发送错误（接收方可能已经退出）
     })
     .expect("Error setting Ctrl-C handler");
+
     // 读取命令行参数
     let args: Vec<String> = env::args().collect();
     let mut interval = 5; // 默认间隔时间为5秒
@@ -101,6 +102,15 @@ fn main() {
             println!("No process found with PID: {}", target_pid);
         }
 
-        thread::sleep(Duration::from_secs(interval));
+        // 使用 recv_timeout 代替 thread::sleep
+        match rx.recv_timeout(Duration::from_secs(interval)) {
+            Ok(_) | Err(mpsc::RecvTimeoutError::Disconnected) => {
+                println!("Exiting due to CTRL+C or channel disconnect...");
+                break;
+            }
+            Err(mpsc::RecvTimeoutError::Timeout) => {
+                // 超时，继续执行
+            }
+        }
     }
 }
