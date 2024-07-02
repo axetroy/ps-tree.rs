@@ -36,6 +36,11 @@ fn print_version() {
     process::exit(0);
 }
 
+fn exit_when_become_orphan_processes() {
+    println!("Parent process exited. Exiting...");
+    process::exit(0);
+}
+
 fn main() {
     let running = Arc::new(AtomicBool::new(true));
     let running_clone = Arc::clone(&running); // 克隆Arc引用
@@ -90,19 +95,12 @@ fn main() {
             Some(ps) => match ps.parent() {
                 Some(parent) => {
                     if parent.as_u32() == 1 {
-                        println!("Parent process exited. Exiting...");
-                        process::exit(0);
+                        exit_when_become_orphan_processes()
                     }
                 }
-                None => {
-                    println!("Parent process exited. Exiting...");
-                    process::exit(0);
-                }
+                None => exit_when_become_orphan_processes(),
             },
-            None => {
-                println!("Parent process exited. Exiting...");
-                process::exit(0);
-            }
+            None => exit_when_become_orphan_processes(),
         }
 
         if let Some(root) = stat::build_process_tree(&system, Pid::from_u32(target_pid)) {
