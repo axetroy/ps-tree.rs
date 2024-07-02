@@ -6,17 +6,21 @@
 ![License](https://img.shields.io/github/license/axetroy/ps-tree.rs.svg)
 ![Repo Size](https://img.shields.io/github/repo-size/axetroy/ps-tree.rs.svg)
 
-A command line tool to output CPU/memory usage of a process tree.
+A command line tool for monitoring the CPU and memory usage of a process tree.
 
 ## Usage
 
-Download the binary from the release page
+Download the binary from the [release page](https://github.com/axetroy/ps-tree.rs/releases) and run the following command
 
 ```sh
 $ ps-tree <pid>
 ```
 
-### Usage from NodeJS
+### Usage Example
+
+Of course, you can execute this command in another language and parse the results from stdout.
+
+Here we take nodejs as an example.
 
 ```js
 const { spawn } = require("child_process");
@@ -765,6 +769,24 @@ pub struct ProcessNode {
 ```
 
 </details>
+
+### Help information
+
+```bash
+$ ps-tree --help
+Usage: ps-tree <PID> [Options]
+Options:
+  <PID>                Process ID to monitor.
+  --help,-h            Print the help information
+  --version,-V         Print the version information
+  --interval SECONDS   Time interval between updates in seconds.
+Description:
+  This tool monitors the specified process and refreshes the information
+  every SECONDS seconds, as specified by the --interval option.
+Source Code:
+  https://github.com/axetroy/ps-tree.rs
+```
+
 
 ## LICENSE
 
