@@ -17,13 +17,23 @@ fn print_help() {
     eprintln!("Usage: {} <PID> [Options]", args[0]);
     eprintln!("Options:");
     eprintln!("  <PID>                Process ID to monitor.");
-    eprintln!("  --interval SECONDS   Time interval between updates in seconds.\n");
+    eprintln!("  --help,-h            Print the help information");
+    eprintln!("  --version,-V         Print the version information");
+    eprintln!("  --interval SECONDS   Time interval between updates in seconds.");
     eprintln!("Description:");
     eprintln!("  This tool monitors the specified process and refreshes the information");
     eprintln!("  every SECONDS seconds, as specified by the --interval option.");
+    eprintln!("Source Code:");
+    eprintln!("  https://github.com/axetroy/ps-tree.rs");
 
     // 退出进程
     process::exit(1);
+}
+
+fn print_version() {
+    let version = format!("v{}", env!("CARGO_PKG_VERSION"));
+    eprintln!("{}", version);
+    process::exit(0);
 }
 
 fn main() {
@@ -43,11 +53,13 @@ fn main() {
 
     // 查找--interval参数并解析其值
     for (i, arg) in args.iter().enumerate() {
-        if arg == "--interval" && i + 1 < args.len() {
-            interval = args[i + 1].parse::<u64>().unwrap_or(5); // 如果解析失败，使用默认值5秒
-        } else if arg == "--help" {
+        if arg == "--version" || arg == "-V" {
+            print_version();
+        } else if arg == "--help" || arg == "--h" {
             print_help();
             return;
+        } else if arg == "--interval" && i + 1 < args.len() {
+            interval = args[i + 1].parse::<u64>().unwrap_or(5); // 如果解析失败，使用默认值5秒
         }
     }
 
