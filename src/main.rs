@@ -1,5 +1,3 @@
-#![deny(warnings)]
-
 mod stat;
 
 use std::env;
@@ -10,11 +8,58 @@ use std::sync::Arc;
 use std::time::Duration;
 use sysinfo::{Pid, RefreshKind, System};
 
-fn print_help() {
-    // 读取命令行参数
+fn main() {
     let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        print_help_and_exit(&args[0]);
+    }
 
-    eprintln!("Usage: {} <PID> [Options]", args[0]);
+    let mut pid = 0;
+    let mut interval = 5; // 默认更新间隔为5秒
+
+    let mut i = 1;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--help" | "-h" => print_help_and_exit(&args[0]),
+            "--version" | "-V" => print_version_and_exit(),
+            "--interval" => {
+                if i + 1 < args.len() {
+                    interval = args[i + 1].parse::<u64>().unwrap_or_else(|_| {
+                        eprintln!("Invalid interval: {}", args[i + 1]);
+                        process::exit(1);
+                    });
+                    i += 1;
+                } else {
+                    eprintln!("--interval expects a value");
+                    process::exit(1);
+                }
+            }
+            _ => {
+                if pid == 0 {
+                    pid = args[i].parse::<u32>().unwrap_or_else(|_| {
+                        eprintln!("Invalid PID: {}", args[i]);
+                        process::exit(1);
+                    });
+                } else {
+                    eprintln!("Unexpected argument: {}", args[i]);
+                    process::exit(1);
+                }
+            }
+        }
+        i += 1;
+    }
+
+    if pid == 0 {
+        eprintln!("PID is required.");
+        print_help_and_exit(&args[0]);
+    }
+
+    // 这里是监控逻辑
+    monitor_process(pid, interval);
+}
+
+fn print_help_and_exit(program_name: &str) {
+    eprintln!("Usage: {} <PID> [Options]", program_name);
     eprintln!("Options:");
     eprintln!("  <PID>                Process ID to monitor.");
     eprintln!("  --help,-h            Print the help information");
@@ -25,14 +70,11 @@ fn print_help() {
     eprintln!("  every SECONDS seconds, as specified by the --interval option.");
     eprintln!("Source Code:");
     eprintln!("  https://github.com/axetroy/ps-tree.rs");
-
-    // 退出进程
     process::exit(1);
 }
 
-fn print_version() {
-    let version = format!("v{}", env!("CARGO_PKG_VERSION"));
-    eprintln!("{}", version);
+fn print_version_and_exit() {
+    eprintln!("v{}", env!("CARGO_PKG_VERSION"));
     process::exit(0);
 }
 
@@ -41,7 +83,10 @@ fn exit_when_become_orphan_processes() {
     process::exit(0);
 }
 
-fn main() {
+fn monitor_process(pid: u32, interval: u64) {
+    let running = Arc::new(AtomicBool::new(true));
+    let _running_clone = Arc::clone(&running);
+
     let running = Arc::new(AtomicBool::new(true));
     let running_clone = Arc::clone(&running); // 克隆Arc引用
     let (tx, rx) = mpsc::channel::<()>();
@@ -51,37 +96,6 @@ fn main() {
         let _ = tx.send(()); // 发送信号，忽略发送错误（接收方可能已经退出）
     })
     .expect("Error setting Ctrl-C handler");
-
-    // 读取命令行参数
-    let args: Vec<String> = env::args().collect();
-    let mut interval = 5; // 默认间隔时间为5秒
-
-    // 查找--interval参数并解析其值
-    for (i, arg) in args.iter().enumerate() {
-        if arg == "--version" || arg == "-V" {
-            print_version();
-        } else if arg == "--help" || arg == "--h" {
-            print_help();
-            return;
-        } else if arg == "--interval" && i + 1 < args.len() {
-            interval = args[i + 1].parse::<u64>().unwrap_or(5); // 如果解析失败，使用默认值5秒
-        }
-    }
-
-    if args.len() < 2 {
-        eprintln!("Missing PID argument");
-        print_help();
-        return;
-    }
-
-    // 解析 PID
-    let target_pid = match args[1].parse() {
-        Ok(pid) => pid,
-        Err(_) => {
-            eprintln!("Invalid PID: {}", args[1]);
-            return;
-        }
-    };
 
     let current_pid = process::id(); // 获取当前进程的PID，即父进程PID
 
@@ -103,13 +117,13 @@ fn main() {
             None => exit_when_become_orphan_processes(),
         }
 
-        if let Some(root) = stat::build_process_tree(&system, Pid::from_u32(target_pid)) {
+        if let Some(root) = stat::build_process_tree(&system, Pid::from_u32(pid)) {
             // print_process_tree(&root, 0);
             // 使用 serde_json 序列化 ProcessNode 为 JSON
             let json = serde_json::to_string(&root).unwrap();
             println!("{}", json);
         } else {
-            eprintln!("No process found with PID: {}", target_pid);
+            eprintln!("No process found with PID: {}", pid);
         }
 
         // 使用 recv_timeout 代替 thread::sleep
