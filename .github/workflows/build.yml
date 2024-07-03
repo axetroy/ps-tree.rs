@@ -38,6 +38,7 @@ jobs:
           - x86_64-apple-darwin
           - aarch64-apple-darwin
           - x86_64-unknown-freebsd
+          - loongarch64-unknown-linux-gnu
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
@@ -130,6 +131,13 @@ jobs:
             strip: false
             compress: false
             cargo_flags: ""
+          - os: ubuntu-latest
+            target: loongarch64-unknown-linux-gnu
+            artifact_name: ps-tree
+            cross: false
+            strip: false
+            compress: false
+            cargo_flags: ""
 
     env:
       CARGO_INCREMENTAL: 0
@@ -154,8 +162,45 @@ jobs:
           rustup default nightly
           cross build --release --locked --target=${{ matrix.target }} ${{ matrix.cargo_flags }}
 
-      - name: Build with Cargo
-        if: ${{ !matrix.cross }}
+      - name: Build with Cargo (Unix)
+        if: runner.os != 'windows' && matrix.cross == false
+        shell: bash
+        run: |
+          rustup target add ${{ matrix.target }}
+
+          if [ ${{ matrix.target }} = "loongarch64-unknown-linux-gnu" ]; then
+            # 定义远程文件 URL 和本地目录
+            REMOTE_URL="https://github.com/loongson/build-tools/releases/download/2024.06.01/x86_64-cross-tools-loongarch64-binutils_2.42-gcc_14.1.0-glibc_2.39.tar.xz"
+            TARGET_DIR="$HOME/.local/share/loongarch64-unknown-linux-gnu"
+
+            # 下载远程 tar.xz 文件
+            echo "Downloading tar.xz archive..."
+            wget "$REMOTE_URL" -O /tmp/archive.tar.xz
+
+            # 解压到目标目录
+            echo "Extracting archive to $TARGET_DIR..."
+            mkdir -p "$TARGET_DIR"
+            tar -xf /tmp/archive.tar.xz -C "$TARGET_DIR"
+
+            # 设置环境变量
+            export LC_ALL=POSIX
+            export CROSS_TARGET="loongarch64-unknown-linux-gnu"
+            export MABI="lp64d"
+            export BUILD64="-mabi=lp64d"
+            export PATH=$PATH:$TARGET_DIR/cross-tools/bin
+            export JOBS=-j8
+            export CARGO_TARGET_LOONGARCH64_UNKNOWN_LINUX_GNU_LINKER=loongarch64-unknown-linux-gnu-gcc
+            export CC_loongarch64_unknown_linux_gnu=loongarch64-unknown-linux-gnu-gcc
+            export CXX_loongarch64_unknown_linux_gnu=loongarch64-unknown-linux-gnu-g++
+            export AR_loongarch64_unknown_linux_gnu=loongarch64-unknown-linux-gnu-ar
+            export RANLIB_loongarch64_unknown_linux_gnu=loongarch64-unknown-linux-gnu-ranlib
+            export LINKER_loongarch64_unknown_linux_gnu=loongarch64-unknown-linux-gnu-gcc
+          fi
+
+          cargo build --release --locked --target=${{ matrix.target }} ${{ matrix.cargo_flags }}
+
+      - name: Build with Cargo (Windows)
+        if: runner.os == 'Windows' && matrix.cross == false
         run: |
           rustup target add ${{ matrix.target }}
           cargo build --release --locked --target=${{ matrix.target }} ${{ matrix.cargo_flags }}

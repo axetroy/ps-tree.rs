@@ -1,4 +1,4 @@
-# gpm
+# ps-tree.rs
 
 [![ci](https://github.com/axetroy/ps-tree.rs/actions/workflows/ci.yml/badge.svg)](https://github.com/axetroy/ps-tree.rs/actions/workflows/ci.yml)
 [![ci](https://github.com/axetroy/ps-tree.rs/actions/workflows/build.yml/badge.svg)](https://github.com/axetroy/ps-tree.rs/actions/workflows/build.yml)
